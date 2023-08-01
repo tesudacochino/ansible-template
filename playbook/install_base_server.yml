@@ -1,0 +1,46 @@
+---
+- name: Install base server ubuntu
+  hosts: new_server
+  become: true
+
+  vars:
+    source_directory: "{{ lookup('env', 'PWD') }}/resources/install_base_server/home/"
+    destination_directory: ~/
+
+  tasks:
+    - name: Install basic pkg
+      ansible.builtin.apt:
+        pkg:
+          - deborphan
+          - vim
+          - mercurial
+          - ncdu
+          - shellcheck
+          - vim-syntastic
+          - borgbackup
+        state: present
+        update_cache: true
+
+    - name: Set timezone to Europe/Madrid
+      community.general.timezone:
+        name: Europe/Madrid
+
+    - name: Modificar .bashrc Force color
+      ansible.builtin.lineinfile:
+        path: ~/.bashrc
+        search_string: '#force_color_prompt=yes'
+        line: 'force_color_prompt=yes'
+        backup: true
+
+    - name: Modificar .bashrc Prompt root
+      ansible.builtin.lineinfile:
+        path: ~/.bashrc
+        search_string: "    PS1='${debian_chroot:+($debian_chroot)}\\[\\033[01;32m\\]\\u@\\h\\[\\033[00m\\]:\\[\\033[01;34m\\]\\w\\[\\033[00m\\]\\$ '"
+        line: "    PS1='${debian_chroot:+($debian_chroot)}\\[\\033[01;31m\\]\\u@\\h\\[\\033[00m\\]:\\[\\033[01;34m\\]\\w\\[\\033[00m\\]\\$ '"
+        backup: true
+
+    - name: Sincronizar archivos con el servidor remoto
+      ansible.builtin.copy:
+        src: "{{ source_directory }}"
+        dest: "{{ destination_directory }}"
+        mode: preserve

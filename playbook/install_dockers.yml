@@ -1,0 +1,44 @@
+- name: Install Docker testing
+  hosts: new_server
+  become: true
+
+  tasks:
+    - name: Detect distribution
+      ansible.builtin.set_fact:
+        distribution: "{{ ansible_distribution }}"
+
+    - name: Install aptitude
+      ansible.builtin.apt:
+        name: aptitude
+        state: present
+        update_cache: true
+
+    - name: Install required system packages
+      ansible.builtin.apt:
+        pkg:
+          - ca-certificates
+          - curl
+          - gnupg
+        state: present
+        update_cache: true
+
+    - name: Add Docker GPG apt Key
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/{{ distribution | lower }}/gpg
+        state: present
+
+    - name: Add Docker Repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/{{ distribution | lower }} {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Update apt and install docker-ce
+      ansible.builtin.apt:
+        pkg:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        update_cache: true

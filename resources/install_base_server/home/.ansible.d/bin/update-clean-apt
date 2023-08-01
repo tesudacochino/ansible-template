@@ -1,0 +1,16 @@
+#!/bin/sh
+if [ "$1" = "1" ]; then
+	apt-get update
+fi
+
+until false; do
+	echo "--------------------------------------------"
+	apt-get --allow-downgrades --allow-remove-essential --allow-change-held-packages --allow-unauthenticated dist-upgrade
+	apt-get autoremove
+	deborphan -n --find-config | xargs -r dpkg --purge
+	deborphan -n --find-config | xargs -r apt-get purge
+	apt-get autoclean
+	apt-get clean
+	rm /var/cache/apt/archives/* 2> /dev/null
+done
+

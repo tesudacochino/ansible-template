@@ -1,0 +1,85 @@
+---
+- name: Configure backup server
+  hosts: backup_central
+  vars:
+    user: backup
+    group: backup
+    home: /home/backup
+    pool: "{{ home }}/repos"
+    myfile: "{{ lookup('env', 'PWD') ~ '/resources/borg-pub/ext.pem.pub' }}"
+    auth_users:
+      - host: host1
+        key: "{{ lookup('file', lookup('env', 'PWD') ~ '/resources/borg-pub/host1.pub') }}"
+      - host: host2
+        key: "{{ lookup('file', lookup('env', 'PWD') ~ '/resources/borg-pub/host2.pub') }}"
+      - host: host3
+        key: "{{ lookup('file', lookup('env', 'PWD') ~ '/resources/borg-pub/host3.pub') }}"
+  tasks:
+    - name: Install Borg package
+      ansible.builtin.apt:
+        pkg:
+          - borgbackup
+        state: present
+
+    - name: Create backup group
+      ansible.builtin.group:
+        name: "{{ group }}"
+        state: present
+
+    - name: Create backup user
+      ansible.builtin.user:
+        name: "{{ user }}"
+        shell: /bin/bash
+        home: "{{ home }}"
+        createhome: true
+        group: "{{ group }}"
+        groups: "{{ group }}"
+        state: present
+
+    - name: Create backup directory
+      ansible.builtin.file:
+        path: "{{ home }}"
+        owner: "{{ user }}"
+        group: "{{ group }}"
+        mode: "0700"
+        state: directory
+
+    - name: Create SSH directory
+      ansible.builtin.file:
+        path: "{{ home }}/.ssh"
+        owner: "{{ user }}"
+        group: "{{ group }}"
+        mode: "0700"
+        state: directory
+
+    - name: Create repository directory
+      ansible.builtin.file:
+        path: "{{ pool }}"
+        owner: "{{ user }}"
+        group: "{{ group }}"
+        mode: "0700"
+        state: directory
+
+    - name: Configure authorized keys
+      ansible.posix.authorized_key:
+        user: "{{ user }}"
+        key: "{{ item.key }}"
+        key_options: 'command="cd {{ pool }}/{{ item.host }};borg serve --restrict-to-path {{ pool }}/{{ item.host }}",restrict'
+      with_items: "{{ auth_users }}"
+
+    - name: Set permissions for authorized keys file
+      ansible.builtin.file:
+        path: "{{ home }}/.ssh/authorized_keys"
+        owner: "{{ user }}"
+        group: "{{ group }}"
+        mode: "0600"
+        state: file
+
+    - name: Create repository directories for each host
+      ansible.builtin.file:
+        path: "{{ pool }}/{{ item.host }}"
+        owner: "{{ user }}"
+        group: "{{ group }}"
+        mode: "0700"
+        state: directory
+      with_items: "{{ auth_users }}"

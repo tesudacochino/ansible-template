@@ -1,0 +1,24 @@
+---
+- name: Obtener la hora del sistema y compararla con la hora actual
+  hosts: all
+  gather_facts: true
+
+  tasks:
+    - name: Mostrar información del sistema
+      ansible.builtin.debug:
+        msg: "El sistema operativo es {{ ansible_distribution }} {{ ansible_distribution_version }}"
+      # when: ansible_distribution != 'Ubuntu' or ansible_distribution_version != '22.04'
+
+    - name: Obtener la hora del sistema del host
+      ansible.builtin.command: date +"%H:%M"
+      register: hora_sistema
+      changed_when: false
+
+    - name: Obtener la hora actual del sistema de control
+      ansible.builtin.set_fact:
+        hora_actual: "{{ lookup('pipe', 'date +%H:%M') }}"
+
+    - name: Mostrar mensaje si las horas difieren
+      ansible.builtin.debug:
+        msg: "La hora del sistema ({{ inventory_hostname }}) es {{ hora_sistema.stdout }} y la hora actual del sistema de control es {{ hora_actual }}."
+      when: hora_sistema.stdout != hora_actual

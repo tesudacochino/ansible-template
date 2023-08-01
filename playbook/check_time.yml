@@ -1,0 +1,43 @@
+---
+
+- name: Verificar diferencia de hora en el sistema
+  hosts: all
+  gather_facts: true
+
+  tasks:
+    - name: Obtener la hora del sistema
+      ansible.builtin.command: date +"%s"
+      register: system_time_raw
+      changed_when: false
+
+    - name: Convertir el tiempo del sistema a minutos
+      ansible.builtin.set_fact:
+        system_time_minutes: "{{ system_time_raw.stdout | int // 60 }}"
+
+    - name: Obtener la hora actual del controlador Ansible
+      ansible.builtin.set_fact:
+        current_time: "{{ ansible_date_time.epoch | int // 60 }}"
+
+    - name: Calcular la diferencia de tiempo en minutos
+      ansible.builtin.set_fact:
+        time_difference: "{{ current_time | int - system_time_minutes | int }}"
+
+    - name: Mostrar valores de las variables
+      ansible.builtin.debug:
+        msg: "current - system {{ current_time }} - {{ system_time_minutes }} = {{ time_difference }} "
+
+    - name: Get timedatectl status
+      ansible.builtin.stat:
+        path: /usr/bin/timedatectl
+      register: timedatectl_command
+
+    - name: Check timedatectl status
+      ansible.builtin.debug:
+        msg: "El comando 'timedatectl timesync-status' No está presente en el sistema."
+      when: not timedatectl_command.stat.exists
+      # when: timedatectl_command.stat.exists == False
+
+    - name: Mostrar mensaje si la diferencia es mayor a 1 minutos
+      ansible.builtin.debug:
+        msg: "La hora del sistema difiere de la hora actual en {{ time_difference }} minutos."
+      when: time_difference | int | abs > 1

@@ -1,0 +1,41 @@
+#!/bin/bash
+
+cat << EOF
+Prefix
+  ^b <shortcut>
+
+Panes (splits)
+  %       vertical split
+  "       horizontal split
+  q       show pane numbers
+  x       kill pane
+  space   change layout
+  cursor  change between pane
+  z       zoom in/out
+  !       kill current
+  ^cursor change pane dimension
+  ^o      rotate windows
+
+Windows (tabs)
+  c       create window
+  w       list windows
+  n       next window
+  p       previous window
+  f       find window
+  ,       name window
+  &       kill window
+
+Sessions
+  s       list sessions
+  (       next session
+  )       previous session
+
+Global
+  d       detach current client
+  D       detach other clients
+  t       big clock
+  ?       list shortcuts
+  :       prompt
+  [       normal navigation to scroll around
+EOF
+
